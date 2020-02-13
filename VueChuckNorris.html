@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+</head>
+<div id="app">
+<body>
+<h1>Chuck Norris Jokes</h1>
+<img src="https://s3.amazonaws.com/mf-cnorris/assets/uploads/2016/10/19123509/timeline-05.jpg" width="500px" height="500px">
+<p>{{searchResultsCount}} search results found </p>
+<div style="width:1000px;height:500px;line-height:3em;overflow:scroll;padding:5px;">
+<p v-for="result in searchResults">{{result["value"]}}</p>
+</div>
+<input type="text" v-model="searchString">
+<button @click="searchForJoke">Search for Joke</button>
+<br>
+<br>
+
+
+<select v-model="selectedCategory">
+<option disabled value="">Select a Joke Category</option>
+<option v-for="category in categories">{{category}}</option>
+</select>
+
+<p>{{categoryJoke}}</p>
+<button @click="getCategoryJoke">Get Joke based on category</button>
+
+
+<p id="randomJoke">{{randomJoke}}</p>
+<span>Toggle Random Jokes</span>
+<input type="checkbox" v-model="randomJokeDisplay" @change="toggleRandomJoke" >
+
+</body>
+</div>
+
+<script>
+  
+   
+  let vue = new Vue({
+  el: "#app",
+  data: {
+      categoryJoke: "",
+      randomJoke: "",
+      randomJokeDisplay: true,
+      interval: null,
+      selectedCategory: "",
+      categories: [],
+      searchString: "",
+      searchResults: [],
+      searchResultsCount: 0
+      
+      
+    
+  },
+  methods: {
+      getRandomJoke: function(){
+          this.$http.get("https://api.chucknorris.io/jokes/random")
+          .then(value => { return value.json();})
+          .then(jsonValue => {
+              this.randomJoke = jsonValue["value"];
+              
+          }
+          );
+      },
+
+     randomJokeTimer: function(){
+        this.interval = setInterval(function () { this.getRandomJoke() }.bind(this), 5000);
+     },
+
+     toggleRandomJoke: function(){
+         
+         if(this.randomJokeDisplay == false)
+        {
+            
+            clearInterval(this.interval);
+            this.randomJoke = "Random jokes stopped.";
+            
+        }
+        else
+        {
+            
+            this.getRandomJoke();
+            this.randomJokeTimer();
+            
+        }
+     },
+
+     getCategories: function(){
+        
+        this.$http.get("https://api.chucknorris.io/jokes/categories")
+          .then(value => { return value.json();})
+          .then(jsonValue => {
+              var categoryResults = [];
+
+              for(let key in jsonValue)
+                {   
+                    categoryResults.push(jsonValue[key]);
+                }
+              
+            this.categories = categoryResults;
+              
+
+          }
+          );
+        },
+
+        getCategoryJoke: function(){
+
+            if(this.selectedCategory != "")
+            {
+                var url = "https://api.chucknorris.io/jokes/random?category=" + this.selectedCategory;
+
+                this.$http.get(url)
+                .then(value => { return value.json();})
+                .then(jsonValue => {
+                this.categoryJoke = jsonValue["value"];
+                
+                
+                });
+            }
+            else
+            {
+                alert("Select a category first");
+            }
+          
+
+        },
+
+        searchForJoke: function(){
+
+            if(this.searchString != "")
+            {
+                var url = "https://api.chucknorris.io/jokes/search?query=" + this.searchString;
+
+                this.$http.get(url)
+                .then(value => { return value.json();})
+                .then(jsonValue => {
+                    var jsonResults = [];
+                    for(let key in jsonValue)
+                    {   
+                        jsonResults.push(jsonValue[key]);
+                    }
+                    this.searchResultsCount = jsonResults[0];
+
+                    var finalSearchResults = [];
+                    results = jsonResults[1]
+                    for(let key in results)
+                    {   
+                        finalSearchResults.push(results[key]);
+                    }
+                    this.searchResults = finalSearchResults;
+                    
+                });
+            }
+            else
+            {
+                alert("Enter a search term first.");
+            }
+
+}
+
+
+      
+
+  },
+
+  mounted () {
+      this.getRandomJoke();
+      this.randomJokeTimer();
+      this.getCategories();
+          
+      
+    }
+  
+})
+
+  
+</script>
+</html>
